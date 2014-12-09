@@ -22,7 +22,7 @@
 			if (vips!='') { vips+=':'; }
 			if (spage!='') { vips+=spage; }
 			if (epage!='') { vips+='-'+epage; }
-			console.log(authorlist.trimRight('.'));
+			//console.log(authorlist.trimRight('.'));
 			return(authorlist.trimRight('.')+'. '+year.trimRight('.')+'. '+title.trimRight('.')+'. '+'<em>'+journal.trimRight('.')+'</em> '+vips);
 		};
 
@@ -33,7 +33,7 @@
   		
 var JMap = function(apikey,collectionID) {
   		$(document).ready(function() {
-	   		$.getJSON("http://www.journalmap.org/api/collections/"+collectionID+".json?key="+apikey+"&version=1.0",function(collection){
+	   		$.getJSON("http://www.journalmap.org/api/collections/"+collectionID+".json?key="+apikey+"&version=1.0&callback=?",function(collection){
 	  			var title = collection.title;
 	  			var description = collection.description;
 	  			var intro = collection.intro;
@@ -52,7 +52,7 @@ var JMap = function(apikey,collectionID) {
 		
 		var markers = L.markerClusterGroup();
 		
-		$.getJSON('http://www.journalmap.org/api/articles.json?key='+apikey+'&version=1.0&filters[collection_id][]='+collectionID,function(articles){	
+		$.getJSON('http://www.journalmap.org/api/articles.json?key='+apikey+'&version=1.0&filters[collection_id][]='+collectionID+'&callback=?',function(articles){	
     			$.each(articles,function(i,article) {
 					authorlist = []
 					$.each(article.authors,function(a,authors) {
@@ -70,7 +70,7 @@ var JMap = function(apikey,collectionID) {
     	});
 		
 		
-		//map.attributionControl.setPrefix('<a href="http://www.journalmap.org"><img src="jmap_logo.png" width="100px"></a>');
+		//map.attributionControl.setPrefix('<a href="http://www.journalmap.org"><img src="http://wiki.journalmap.org/lib/exe/fetch.php?media=jmap_logo.png" width="100px"></a>');
 		map.attributionControl.addAttribution('Maps &copy; '+landlink+', Data &copy; '+maplink+', '+cclink+' | <a href="http://www.journalmap.org">JournalMap</a> data provided CC-BY-SA');
 
 		$("#jmap").after('<a href="http://www.journalmap.org"><img src="jmap_logo.png" width="150px"></a>');
