@@ -22,7 +22,6 @@
 			if (vips!='') { vips+=':'; }
 			if (spage!='') { vips+=spage; }
 			if (epage!='') { vips+='-'+epage; }
-			//console.log(authorlist.trimRight('.'));
 			return(authorlist.trimRight('.')+'. '+year.trimRight('.')+'. '+title.trimRight('.')+'. '+'<em>'+journal.trimRight('.')+'</em> '+vips);
 		};
 
