@@ -72,7 +72,7 @@ var JMap = function(apikey,collectionID) {
 		//map.attributionControl.setPrefix('<a href="http://www.journalmap.org"><img src="http://wiki.journalmap.org/lib/exe/fetch.php?media=jmap_logo.png" width="100px"></a>');
 		map.attributionControl.addAttribution('Maps &copy; '+landlink+', Data &copy; '+maplink+', '+cclink+' | <a href="http://www.journalmap.org">JournalMap</a> data provided CC-BY-SA');
 
-		$("#jmap").after('<a href="http://www.journalmap.org"><img src="jmap_logo.png" width="150px"></a>');
+		$("#jmap").after('<a href="http://www.journalmap.org"><img src="https://www.journalmap.org/assets/logo-cbfb014d0d81331661b8c75c68fdd01f.jpg" width="150px"></a>');
 
 		});
 
