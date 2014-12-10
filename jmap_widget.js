@@ -32,7 +32,7 @@
   		
 var JMap = function(apikey,collectionID) {
   		$(document).ready(function() {
-	   		$.getJSON("http://www.journalmap.org/api/collections/"+collectionID+".json?key="+apikey+"&version=1.0&callback=?",function(collection){
+	   		$.getJSON("http://www.journalmap.org/api/collections/"+collectionID+".json?key="+apikey+"&version=1.0",function(collection){
 	  			var title = collection.title;
 	  			var description = collection.description;
 	  			var intro = collection.intro;
@@ -51,7 +51,7 @@ var JMap = function(apikey,collectionID) {
 		
 		var markers = L.markerClusterGroup();
 		
-		$.getJSON('http://www.journalmap.org/api/articles.json?key='+apikey+'&version=1.0&filters[collection_id][]='+collectionID+'&callback=?',function(articles){	
+		$.getJSON('http://www.journalmap.org/api/articles.json?key='+apikey+'&version=1.0&filters[collection_id][]='+collectionID,function(articles){	
     			$.each(articles,function(i,article) {
 					authorlist = []
 					$.each(article.authors,function(a,authors) {
