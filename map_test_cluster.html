@@ -7,6 +7,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 
+	<link rel="stylesheet" href="https://www.journalmap.org/assets/application-93ac457f7c192d5b9a815e8253889485.css" />
 	<script type='text/javascript' src='http://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js?ver=1.4.2'></script>
 	<script src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>
 	<link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css" />
@@ -35,6 +36,7 @@
 			return this.replace(new RegExp("[" + charlist + "]+$"), "");
 		};
   
+  		// Function to build citations from JournalMap database fields
 		var buildCitation = function(title,authors,year,journal,vol,iss,spage,epage) {
 			authorlist = '';
 			for (i = 0; i < authors.length; i++) {
@@ -57,12 +59,15 @@
 			return(authorlist.trimRight('.')+'. '+year.trimRight('.')+'. '+title.trimRight('.')+'. '+'<em>'+journal.trimRight('.')+'</em> '+vips);
 		};
 
+		// Function to build HTML link from DOI numbers
 		var buildDOIlink = function(doi) {
 			return('<a href="http://dx.doi.org/'+doi+'" target="_blank">'+doi+'</a>');
 		};
 
   		$(document).ready(function() {
-	   		$.getJSON("http://www.journalmap.org/api/collections/"+collectionID+".json?key=aKesQixBxBcyA4SaucuD&version=1.0",function(collection){
+				
+				// Get the information on the collection (e.g., title, description, intro)
+	   			$.getJSON("https://www.journalmap.org/api/collections/"+collectionID+".json?key=aKesQixBxBcyA4SaucuD&version=1.0",function(collection){
 	  			var title = collection.title;
 	  			var description = collection.description;
 	  			var intro = collection.intro;
@@ -70,6 +75,7 @@
   			});   		
     	
     	
+    	// Setup the Leaflet Map
   		var map = L.map('jmap').setView([centerLat, centerLon], Zoom);
   		maplink = '<a href="http://openstreetmap.org">OpenStreetMap</a>';
 		landlink = '<a href="http://thunderforest.com/">Thunderforest</a>'; 
@@ -79,9 +85,9 @@
  		   maxZoom: 18,
 		}).addTo(map);
 		
+		// Setup the markers and clusters for the map
 		var markers = L.markerClusterGroup();
-		
-		$.getJSON('http://www.journalmap.org/api/articles.json?key=aKesQixBxBcyA4SaucuD&version=1.0&filters[collection_id][]='+collectionID,function(articles){	
+		$.getJSON('https://www.journalmap.org/api/articles.json?key=aKesQixBxBcyA4SaucuD&version=1.0&collection_id='+collectionID,function(articles){	
     			$.each(articles,function(i,article) {
 					authorlist = []
 					$.each(article.authors,function(a,authors) {
@@ -91,7 +97,7 @@
     				$.each(article.locations,function(j,loc) {
     					//console.log(loc.latitude);
     					var marker = L.marker([loc.latitude,loc.longitude]);
-    					marker.bindPopup("<strong>"+article.title+"</strong><p>"+citation+"<p><strong>DOI: </strong>"+buildDOIlink(article.doi)); 
+    					marker.bindPopup("<strong><a href='https://www.journalmap.org/articles/"+article.id+"/' target='_blank'>"+article.title+"</a></strong><p>"+citation+"<p><strong>DOI: </strong>"+buildDOIlink(article.doi)+"<br><strong>URL: </strong>"+article.url); 
     					markers.addLayer(marker);
     				});
     			});
@@ -100,9 +106,9 @@
 		
 		
 		//map.attributionControl.setPrefix('<a href="http://www.journalmap.org"><img src="jmap_logo.png" width="100px"></a>');
-		map.attributionControl.addAttribution('Maps &copy; '+landlink+', Data &copy; '+maplink+', '+cclink+' | <a href="http://www.journalmap.org">JournalMap</a> data provided CC-BY-SA');
+		map.attributionControl.addAttribution('Maps &copy; '+landlink+', Data &copy; '+maplink+', '+cclink+' | <a href="https://www.journalmap.org">JournalMap</a> data provided CC-BY-SA');
 
-		$("#jmap").after('<a href="http://www.journalmap.org"><img src="jmap_logo.png" width="150px"></a>');
+		$("#jmap").after('<a href="https://www.journalmap.org"><img src="jmap_logo.png" width="150px"></a>');
 
 		});
 
