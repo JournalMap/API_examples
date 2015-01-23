@@ -1,0 +1,37 @@
+<!doctype html>
+<meta charset="utf-8">
+ 
+<script src="http://www.d3plus.org/js/d3.js"></script>
+<script src="http://www.d3plus.org/js/d3plus.js"></script>
+ 
+<div id="viz"></div>
+ 
+<script>
+var apikey = "PjFRefUzFYzFCvshie8Q";
+
+
+d3.json("https://www.journalmap.org/api/publications.json?key="+apikey+"&version=1.0", function(error, sample_data) {
+	console.log(sample_data);
+  var visualization = d3plus.viz()
+    .container("#viz")
+    .messages("Loading data from JournalMap API...")
+    .data(sample_data)
+    .type("tree_map")
+    .id("name")
+    .color("name")
+    .size("articles_count")
+    .height(500)
+    .width(750)
+    .ui([
+      {
+        "method" : "color",
+        "type": "drop",
+        "title": "Change color scheme:",
+        "value"  : [{"Random": "name"}, {"Article Count": "articles_count"}]
+      }
+    ])
+    .draw();
+
+}); // Close d3
+
+</script>

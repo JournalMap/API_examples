@@ -12,6 +12,7 @@
 	<link rel="stylesheet" href="http://leaflet.github.io/Leaflet.markercluster/dist/MarkerCluster.css" />
 	<link rel="stylesheet" href="http://leaflet.github.io/Leaflet.markercluster/dist/MarkerCluster.Default.css" />
 	<script src="http://leaflet.github.io/Leaflet.markercluster/dist/leaflet.markercluster-src.js"></script>
+	<script type="text/javascript" src="https://d1bxh8uas1mnw7.cloudfront.net/assets/embed.js"></script>
 
 </head>
 
@@ -28,6 +29,7 @@
   		var centerLon = -100;
   		var Zoom = 3;
   		var apikey = "PjFRefUzFYzFCvshie8Q";
+
   
   		String.prototype.trimRight = function(charlist) {
   			if (charlist === undefined)
@@ -63,6 +65,18 @@
 			return('<a href="http://dx.doi.org/'+doi+'" target="_blank">'+doi+'</a>');
 		};
 
+
+		// function to build HTML for the popup box for each marker
+		var buildPopupHTML = function(id,title,citation,doi,url) {
+		
+			var html = "<strong><a href='https://www.journalmap.org/articles/"+id+"/' target='_blank'>"+
+				title+"</a></strong><p>"+citation+"<p><strong>DOI: </strong>"+buildDOIlink(doi)+
+				"<br><strong>URL: </strong>"+url+
+				"<br><div></div>";
+			console.log(html);
+			return html;
+		};
+
     	// Setup the Leaflet Map
   		var map = L.map('jmap').setView([centerLat, centerLon], Zoom);
 		L.tileLayer('http://{s}.tile.thunderforest.com/landscape/{z}/{x}/{y}.png', {
@@ -89,8 +103,6 @@
 
 		// Setup the markers and clusters for the map
 		var markers = L.markerClusterGroup();
-		console.log(window.articlesURL);
-		//$.getJSON(window.articlesURL,function(articles){	
 		$.getJSON("https://www.journalmap.org/api/articles.json?collection_id="+window.collectionID+"&key="+apikey+"&page=1&version=1.0",function(articles){
     			$.each(articles,function(i,article) {
 					authorlist = []
@@ -99,9 +111,9 @@
 					});
     				var citation = buildCitation(article.title,authorlist,article.publish_year,article.publication.name,article.volume,article.issue,article.start_page,article.end_page);
     				$.each(article.locations,function(j,loc) {
-    					//console.log(loc.latitude);
-    					var marker = L.marker([loc.latitude,loc.longitude]);
-    					marker.bindPopup("<strong><a href='https://www.journalmap.org/articles/"+article.id+"/' target='_blank'>"+article.title+"</a></strong><p>"+citation+"<p><strong>DOI: </strong>"+buildDOIlink(article.doi)+"<br><strong>URL: </strong>"+article.url); 
+    					console.log(loc.latitude);
+    					var marker = L.marker([loc.latitude,loc.longitude]).on('click', onClick);
+    					marker.bindPopup(buildPopupHTML(article.id,article.title,citation,article.doi,article.url)); 
     					markers.addLayer(marker);
     				});
     			});
@@ -119,8 +131,15 @@
 
 		});
 
-  
+	var onClick = function(e) {
+		this.getPopup()._content.replace("<div></div>","TEST<div data-badge-popover='right' data-badge-type='donut' data-doi='10.1016/S0140-6736(11)61619-x' data-hide-no-mentions='false' class='altmetric-embed'></div>");
+	};
+
   </script>
+
+<script type='text/javascript'>
+    _altmetric_embed_init();
+    </script>
 
 </body>
 

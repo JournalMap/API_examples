@@ -12,6 +12,7 @@
 	<link rel="stylesheet" href="http://leaflet.github.io/Leaflet.markercluster/dist/MarkerCluster.css" />
 	<link rel="stylesheet" href="http://leaflet.github.io/Leaflet.markercluster/dist/MarkerCluster.Default.css" />
 	<script src="http://leaflet.github.io/Leaflet.markercluster/dist/leaflet.markercluster-src.js"></script>
+	<script type='text/javascript' src='https://d1bxh8uas1mnw7.cloudfront.net/assets/embed.js'></script>
 
 </head>
 
@@ -79,7 +80,7 @@ function buildMap (id) {
 						var locations = articles[i].locations;
 						for (j=0;j<locations.length;j++) {
 							var marker = L.marker([locations[j].latitude,locations[j].longitude]);
-							marker.bindPopup("<strong><a href='https://www.journalmap.org/articles/"+article.id+"/' target='_blank'>"+article.title+"</a></strong>"); 
+							marker.bindPopup("<div><strong><a href='https://www.journalmap.org/articles/"+article.id+"/' target='_blank'>"+article.title+"</a></strong></div><div class='altmetric-embed' data-badge-type='donut' data-doi='"+article.doi+"'></div>"); 
 							markers.addLayer(marker);	
 						};
 					};
