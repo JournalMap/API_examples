@@ -119,7 +119,6 @@
 		if (vips!='') { vips+=':'; }
 		if (spage!='') { vips+=spage; }
 		if (epage!='') { vips+='-'+epage; }
-		console.log(authorlist.trimRight('.'));
 		return(authorlist.trimRight('.')+'. '+year+'. '+title.trimRight('.')+'. '+'<em>'+journal.trimRight('.')+'</em> '+vips);
 	};
 
@@ -163,7 +162,6 @@
 			var articles = [];
 			q = queue();
 			for(page=1;page<=pages;page++) {
-				//console.log("page "+page+" of "+pages);
 				q.defer(d3.json, "https://www.journalmap.org/api/articles.json?key="+apikey+"&page="+page+"&collection_id="+id+"&version=1.0")
 			}
 			q.awaitAll(function(error,files) { 
@@ -175,7 +173,6 @@
 				// Assemble the markers for the map
 				markers = L.markerClusterGroup();  // Empty out the markers if they exist already
 				articles.forEach(function(article){
-					//console.log(article);
 					var authorlist = []
 					article.authors.forEach(function(author) {
 						authorlist.push(author.last_name + ", " + author.first_name);
