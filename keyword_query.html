@@ -26,29 +26,13 @@
 		left: 10%;
 	}
 
-	h3 {
+	.title {
 		border: none;
   		font: normal normal bold 22px/1 Georgia, serif;
   		color: black;
   		text-align: center;
   		margin: 0 0 6px;
 		padding: 4px;
-	}
-
-	.intro {
-		border: none;
-		font: italic normal 16px/1 Arial, Helvetica, sans-serif;
-		color: black;
-		margin: 3 3 4px;
-		padding: 3px;
-	}
-
-	.description {
-		border: none;
-		font: normal 13px/1 Arial, Helvetica, sans-serif;
-		color: black;
-		margin: 3 3 4px;
-		padding: 3px;
 	}
 
 	.container {
@@ -62,12 +46,10 @@
 
 
 
-<h2>Example of an Embedded Collection Map via the JournalMap API</h2>
+<h2>Example of a Keyword Search Map via the JournalMap API</h2>
 
   <div class="container">
- 	<h3 id="collectionName" class="title">Collection</h3>
- 	<div id="intro" class="intro"></div>
- 	<div id="description" class="description"></div>
+ 	<h3 id="mapName" class="title">JournalMap API keyword search for "Migratory Connectivity"</h3>
 	<div id="jmap" style="height:400px;" >
 		<div class="spinner" id="jmapSpin"></div>
 	</div>
@@ -75,7 +57,7 @@
   </div>  
   
 <script>
-	var collectionName = "Migratory Connectivity";
+	var keywords = "Migratory Connectivity";
 	var centerLat = 40;
 	var centerLon = -100;
 	var Zoom = 3;
@@ -137,32 +119,14 @@
 	};
 
 
-	// Get the information on the collection (e.g., title, description, intro)
-	d3.json("https://www.journalmap.org/api/collections.json?key="+apikey+"&version=1.0&query="+collectionName,function (error,collection){
-		console.log(collection[0]);
-		var title = collection[0].title;
-		var description = collection[0].description;
-		var intro = collection[0].intro;
-		var id = collection[0].id;
-		d3.select("#collectionName").text(title);
-		d3.select("#intro").text(intro);
-		d3.select("#description").text(description);
-
-		// Initialize the map
-		var map = L.map('jmap').setView([centerLat, centerLon], Zoom);
-		L.tileLayer('http://{s}.tile.thunderforest.com/landscape/{z}/{x}/{y}.png', {
-		   maxZoom: 18,
-		}).addTo(map);
-		var markers = L.markerClusterGroup();
-
 		// Fetch the articles in the collection and build the points.
-		d3.xhr("https://www.journalmap.org/api/articles.json?key="+apikey+"&page=1&collection_id="+id+"&version=1.0", function(error,pubjson) {
+		d3.xhr("https://www.journalmap.org/api/articles.json?key="+apikey+"&page=1&version=1.0&query="+keywords, function(error,pubjson) {
 			var pages = pubjson.getResponseHeader('X-Pages');
 			spinner.spin(document.getElementById("jmapSpin"));
 			var articles = [];
 			q = queue();
 			for(page=1;page<=pages;page++) {
-				q.defer(d3.json, "https://www.journalmap.org/api/articles.json?key="+apikey+"&page="+page+"&collection_id="+id+"&version=1.0")
+				q.defer(d3.json, "https://www.journalmap.org/api/articles.json?key="+apikey+"&page=1&version=1.0&query="+keywords)
 			}
 			q.awaitAll(function(error,files) { 
 
@@ -170,8 +134,14 @@
 					articles.push.apply(articles,files[f]);
 				};
 
+				// Initialize the map
+				var map = L.map('jmap').setView([centerLat, centerLon], Zoom);
+				L.tileLayer('http://{s}.tile.thunderforest.com/landscape/{z}/{x}/{y}.png', {
+				   maxZoom: 18,
+				}).addTo(map);
+				var markers = L.markerClusterGroup();
+
 				// Assemble the markers for the map
-				markers = L.markerClusterGroup();  // Empty out the markers if they exist already
 				articles.forEach(function(article){
 					var authorlist = []
 					article.authors.forEach(function(author) {
@@ -188,16 +158,16 @@
 
 				spinner.stop(document.getElementById("jmapSpin"));
 
+				// Set the map source attribution
+		  		maplink = '<a href="http://openstreetmap.org">OpenStreetMap</a>';
+				landlink = '<a href="http://thunderforest.com/">Thunderforest</a>'; 
+				cclink = '<a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>';
+				leaflink = '<a href="http://leafletjs.com">Leaflet</a>';
+				map.attributionControl.addAttribution('Maps &copy; '+landlink+', Data &copy; '+maplink+', '+cclink+' | <a href="https://www.journalmap.org">JournalMap</a> data provided CC-BY-SA');
+
 			});  // Close the q.awaitAll
 		});  // Close the d3.xhr call
 
-		// Set the map source attribution
-  		maplink = '<a href="http://openstreetmap.org">OpenStreetMap</a>';
-		landlink = '<a href="http://thunderforest.com/">Thunderforest</a>'; 
-		cclink = '<a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>';
-		leaflink = '<a href="http://leafletjs.com">Leaflet</a>';
-		map.attributionControl.addAttribution('Maps &copy; '+landlink+', Data &copy; '+maplink+', '+cclink+' | <a href="https://www.journalmap.org">JournalMap</a> data provided CC-BY-SA');
 
-	});   	// Close the original d3.json that fetched the collection info.  
 
 </script>
