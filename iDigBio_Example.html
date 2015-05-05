@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>iDigBio Map</title>
+        <!--<link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.css" />
+		<script src="http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.js"></script>
+        -->
+        <script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
+        <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+        <script src='//api.tiles.mapbox.com/mapbox.js/plugins/leaflet-omnivore/v0.2.0/leaflet-omnivore.min.js'></script>
+        <link rel="stylesheet" href="http://leaflet.github.io/Leaflet.markercluster/dist/MarkerCluster.css" />
+		<link rel="stylesheet" href="http://leaflet.github.io/Leaflet.markercluster/dist/MarkerCluster.Default.css" />
+		<script src='https://api.tiles.mapbox.com/mapbox.js/v2.1.5/mapbox.js'></script>
+		<link href='https://api.tiles.mapbox.com/mapbox.js/v2.1.5/mapbox.css' rel='stylesheet' />
+		<script src="http://leaflet.github.io/Leaflet.markercluster/dist/leaflet.markercluster-src.js"></script>
+		<script src="http://d3js.org/queue.v1.min.js"></script>
+		<script src="spin.js"></script>
+
+		<style>
+			.spinner {
+				position: relative;
+				top: 50%;
+				left: 10%;
+			}
+
+			.title {
+				border: none;
+		  		font: normal normal bold 22px/1 Georgia, serif;
+		  		color: black;
+		  		text-align: center;
+		  		margin: 0 0 6px;
+				padding: 4px;
+			}
+
+			.container {
+				padding:8px;
+				margin: 3px;
+				width:750px;
+				border:thin solid black;
+				box-shadow: 5px 5px 2px #888888
+			}
+		</style>
+
+        <script type="text/javascript">
+
+
+			String.prototype.toProperCase = function () {
+			    return this.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
+			};
+
+			String.prototype.trimRight = function(charlist) {
+		  			if (charlist === undefined)
+					    charlist = "\s";
+					return this.replace(new RegExp("[" + charlist + "]+$"), "");
+				};
+		  
+				// Function to build citations from JournalMap database fields
+			var buildCitation = function(title,authors,year,journal,vol,iss,spage,epage) {
+				authorlist = '';
+				for (i = 0; i < authors.length; i++) {
+					if (i===0) {
+						var sep = '';
+					} else if (i===(authors.length-1)) {
+						sep = ' and ';
+					} else {
+						sep = ', ';
+					}
+					authorlist += sep+authors[i];
+				}
+				var vips = '';
+				if (vol!='') { vips+=vol; }
+				if (iss!='') { vips+='('+iss+')'; }
+				if (vips!='') { vips+=':'; }
+				if (spage!='') { vips+=spage; }
+				if (epage!='') { vips+='-'+epage; }
+				return(authorlist.trimRight('.')+'. '+year+'. '+title.trimRight('.')+'. '+'<em>'+journal.trimRight('.')+'</em> '+vips);
+			};
+
+			// Function to build HTML link from DOI numbers
+			var buildDOIlink = function(doi) {
+				return('<a href="http://dx.doi.org/'+doi+'" target="_blank">'+doi+'</a>');
+			};
+
+
+			// function to build HTML for the popup box for each marker
+			var buildPopupHTML = function(id,title,citation,doi,url) {
+				var html = "<strong><a href='https://www.journalmap.org/articles/"+id+"/' target='_blank'>"+
+					title+"</a></strong><p>"+citation+"<p><strong>DOI: </strong>"+buildDOIlink(doi)+
+					"<br><strong>URL: </strong>"+url;
+				return html;
+			};
+
+			var buildSppPopup = function(source) {
+				var html = '<strong>Species: '+source.scientificname.toProperCase()+'</strong><br>'+
+							'Collected: '+source.datecollected+'<br>'+
+							'Location: '+source.locality+', '+source.county+', '+source.stateprovince+', '+source.country+'<br>'+
+							'<a href="https://www.idigbio.org/portal/records/'+source.uuid+'" target="_blank">View record at iDigBio.org</a>';
+				return html;
+			};
+
+			var buildLLBox = function(lat,lon) {
+				var minLat = Math.floor(lat*2)/2;
+				var minLon = Math.floor(lon*2)/2;
+				var maxLat = minLat + 0.5;
+				var maxLon = minLon + 0.5;
+				return [[minLat,minLon],[maxLat,maxLon]];
+			};
+
+			L.mapbox.accessToken = 'pk.eyJ1IjoiamFrYWwxNCIsImEiOiJPN3ZIZXlRIn0.TPFa1z0-Xy5Mf4wzAVnVvQ';
+			var collectionName = "Sage Grouse";
+			var collectionID = 9;
+			var keywords = "Centrocercus urophasianus";
+			var centerLat = 43;
+			var centerLon = -115;
+			var Zoom = 5;
+			var apikey = "PjFRefUzFYzFCvshie8Q";
+ 
+			var spinner = new Spinner({
+				lines: 12, // The number of lines to draw
+				length: 7, // The length of each line
+				width: 3, // The line thickness
+				radius: 10, // The radius of the inner circle
+				color: '#000', // #rbg or #rrggbb
+				speed: 1, // Rounds per second
+				trail: 100, // Afterglow percentage
+				shadow: false // Whether to render a shadow
+			})
+
+			spinner.spin(document.getElementById("jmapSpin"));
+
+            /*
+            * This example provided by iDigBio.     www.idigbio.org
+            *
+            * The list of available terms is available at
+            * https://www.idigbio.org/wiki/index.php/IDigBio_API_v1_Specification#Search
+            */
+            var terms = [
+                {"term"  :  { "scientificname" : keywords.toLowerCase()}}
+            ];
+
+            $(document).ready(function(){
+                var query = {
+                    "size": 10000,
+                    "from": 0,
+                    "query":{
+                        "filtered":{
+                            "filter":{
+                                "and":[]
+                            }
+                        }
+                    },
+                    "sort":{
+                        "scientificname":{"order":"asc"}
+                    }
+                };
+                
+                //Build query params and outlink
+                var link=[];
+                $.each(terms,function(ind,item){
+                    query.query.filtered.filter.and.push(item);
+                    $.each(item.term,function(key,val){
+                        link.push(key+'='+ val.toLowerCase());
+                    });
+                });
+                var link_string = '<br>Point data by <a href="http://www.idigbio.org" target="_blank">iDigBio</a> and <a href="http://www.journalmap.org" target="_blank">JournalMap</a>';
+
+                var base = L.tileLayer('https://{s}.tiles.mapbox.com/v4/examples.map-i87786ca/{z}/{x}/{y}.png?access_token=' + L.mapbox.accessToken, { 
+                    id: 'examples.map-20v6611k',
+                    attribution: 'Map data &copy; OpenStreetMap contributors; ' + link_string,
+                    continuousWorld: false,
+                    noWrap: true,
+                    minZoom: 1, 
+                    maxZoom: 18,
+                    reuseTiles: true
+                });
+
+                var iDig = L.tileLayer('http://beta-search.idigbio.org/v2/mapping/2ZNggkNx/{z}/{x}/{y}.png');
+                map = L.map('map',{
+                    center: [centerLat,centerLon],
+                    zoom: Zoom,
+                    layers: [base,iDig],
+                    scrollWheelZoom: true,
+                    boxZoom: false
+                });
+
+                var sgStyle = L.geoJson(null, {
+                	style: function(feature) {
+                		return {
+                			weight: 2.5,
+                			opacity: 1,
+                			color: '#343434',
+                			dashArray: '3',
+                			fillOpacity: 0
+                		};
+                	}
+                });
+
+                var sgBdy = omnivore.kml('sg_current.kml', null, sgStyle).addTo(map);
+
+                //Make request to iDigBio search server
+                
+                var iDigPts = L.layerGroup();
+                var iDigRec = L.layerGroup();
+                $.post('https://search.idigbio.org/idigbio/records/_search', JSON.stringify(query),function(resp){
+                    console.log(resp);
+                    $(resp.hits.hits).each(function(ind,item){
+                        var source = item._source;
+                        //console.log(source);
+                        if(typeof source.geopoint !== 'undefined'){
+
+                            // Create the point and add it to the map
+                            
+                            var c = new L.circleMarker([source.geopoint.lat,source.geopoint.lon],{weight:2,opacity:0.75,fillOpacity:0.75}).setRadius(5);
+                            c.bindPopup(buildSppPopup(source));
+                            iDigPts.addLayer(c);
+                            var r = new L.Rectangle(buildLLBox(source.geopoint.lat,source.geopoint.lon),{weight:2,opacity:0.5});
+                            iDigRec.addLayer(r);
+                        }
+                    });
+                });
+                map.addLayer(iDigRec);
+
+                map.on('zoomend', function(){
+                	if(map.getZoom() > 7 && map.hasLayer(iDigRec)) {
+                		map.removeLayer(iDigRec);
+                		map.addLayer(iDigPts);
+                	}
+                	if (map.getZoom() <= 7 && map.hasLayer(iDigRec) == false) {
+                		map.addLayer(iDigRec);
+                		map.removeLayer(iDigPts);
+                	}
+                });
+
+				// Fetch the articles in the JournalMap collection and build the points.
+				var markers = L.markerClusterGroup();
+				d3.xhr("https://www.journalmap.org/api/articles.json?key="+apikey+"&page=1&collection_id="+collectionID+"&version=1.0", function(error,pubjson) {
+					var pages = pubjson.getResponseHeader('X-Pages');
+
+					var articles = [];
+					q = queue();
+					for(page=1;page<=pages;page++) {
+						q.defer(d3.json, "https://www.journalmap.org/api/articles.json?key="+apikey+"&page="+page+"&collection_id="+collectionID+"&version=1.0")
+					}
+					q.awaitAll(function(error,files) { 
+
+						for (f=0;f<files.length;f++) { 
+							articles.push.apply(articles,files[f]);
+						};
+
+						// Assemble the markers for the map
+						markers = L.markerClusterGroup();  // Empty out the markers if they exist already
+						articles.forEach(function(article){
+							var authorlist = []
+							article.authors.forEach(function(author) {
+								authorlist.push(author.last_name + ", " + author.first_name);
+							});
+		    				var citation = buildCitation(article.title,authorlist,article.publish_year,article.publication.name,article.volume,article.issue,article.start_page,article.end_page);
+							article.locations.forEach(function(location){
+								var marker = L.marker([location.latitude,location.longitude],{
+									icon: L.mapbox.marker.icon({
+										'marker-size':'small',
+										'marker-symbol':'circle',
+										'marker-color':'#238443'
+									})
+								});
+								marker.bindPopup(buildPopupHTML(article.id,article.title,citation,article.doi,article.url)); 
+		    					//marker.addTo(map);
+		    					markers.addLayer(marker);	
+							});
+						});
+						map.addLayer(markers);
+
+			
+
+					});  // Close the q.awaitAll
+				});  // Close the d3.xhr call
+            });
+
+			spinner.stop(document.getElementById("jmapSpin"));
+        </script>
+    </head>
+    <body>
+       <!-- <div id="map" style="height:500px;width:700px;"></div> -->
+
+<h2>Example JournalMap/iDigBio Mashup</h2>
+
+  <div class="container">
+ 	<h4 id="mapName" class="title">JournalMap & iDigBio API Records for Sage Grouse (<em>Centrocercus urophasianus</em>)</h4>
+	<div id="map" style="height:500px" >
+		<div class="spinner" id="jmapSpin"></div>
+	</div>
+	<a href="https://www.journalmap.org"><img src="http://wiki.journalmap.org/lib/exe/fetch.php?media=jmap_logo.png" height="70px"></a><a href="http://www.idigbio.org"><img src="http://wiki.journalmap.org/lib/exe/fetch.php?media=idigbio_logo_0.png" height="50px"></a>
+  </div>  
+
+    </body>
+</html>

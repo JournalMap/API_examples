@@ -1,0 +1,14 @@
+Add histogram of articles by year to Pub example page
+
+Histogram of JournalMap articles by year (skim numbers off of page headers - just page 1 needed for each year).
+
+Circle chart of articles by country/continent
+
+Compare geographic spread of collections
+
+
+
+
+API Wish List:
+1. Pagination for authors, pubs, collections - e.g., Ability to query for all publications
+2. Add date-added stamps to returned attributes - e.g., ability to look at records added over time
