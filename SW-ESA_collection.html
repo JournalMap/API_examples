@@ -90,8 +90,7 @@
 	// function to build HTML for the popup box for each marker
 	var buildPopupHTML = function(id,title,citation,doi,url) {
 		var html = "<strong><a href='https://www.journalmap.org/articles/"+id+"/' target='_blank'>"+
-			title+"</a></strong><p>"+citation+"<p><strong>DOI: </strong>"+buildDOIlink(doi)+
-			"<br><strong>URL: </strong>"+url;
+			title+"</a></strong><p>"+citation+"<p><strong>DOI: </strong>"+buildDOIlink(doi);
 		return html;
 	};
 
