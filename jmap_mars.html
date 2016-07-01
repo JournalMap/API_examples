@@ -19,7 +19,7 @@ L.mapbox.accessToken = 'pk.eyJ1IjoiamFrYWwxNCIsImEiOiJPN3ZIZXlRIn0.TPFa1z0-Xy5Mf
   	.setView([0,0],1)
   	.addLayer(L.mapbox.tileLayer('mapbox.mars-satellite'));
   L.mapbox.featureLayer()
-  	.loadURL('https://rawgit.com/JournalMap/API_examples/master/marslit.txt')
+  	.loadURL('https://rawgit.com/JournalMap/API_examples/master/marslit.json')
   	.on('ready', function(e) {
   		var clusterGroup = new L.MarkerClusterGroup();
   		e.target.eachLayer(function(layer) {
