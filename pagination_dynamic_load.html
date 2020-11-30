@@ -1,0 +1,107 @@
+<html>
+
+<head>
+	<title>JournalMap API Example</title>
+	<meta charset="utf-8" />
+
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+	<script src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>
+	<link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css" />
+	<link rel="stylesheet" href="MarkerCluster.css" />
+	<link rel="stylesheet" href="MarkerCluster.Default.css" />
+	<script src="leaflet.markercluster-src.js"></script>
+	<script type='text/javascript' src='https://d1bxh8uas1mnw7.cloudfront.net/assets/embed.js'></script>
+
+</head>
+
+<body>
+
+
+<h2>Example of Pagination for JournalMap API - Dynamic Drawing of loading points</h2>
+
+  <h3 id="pubName">Article Locations for Journal of Arid Environments</h3>
+  <div id="container" style="height:410px; width:610px;border:thin solid black;box-shadow: 5px 5px 2px #888888">
+	<div id="jmap" style="height:400px; width:600px" >
+	</div>
+  </div>
+  <br>
+  Change publication: <form><select name="pubSel"></select></form>
+
+
+<script>
+	var data = []; // a global to store the json response
+	var pubName = "Journal of Arid Environments";
+	var pubID = 1;
+	var centerLat = 0;
+	var centerLon = 0;
+	var Zoom = 1;
+	var apikey = "PjFRefUzFYzFCvshie8Q";
+
+
+// Get the list of pubs to populate the dropdown box
+d3.json("https://journalmap.org/api/publications.json?key="+apikey+"&version=1.0", function(error, json) {
+	  if (error) return console.warn(error);
+
+	  var dropDown = d3.selectAll("select");
+    dropDown.selectAll("option")
+      .data(json)
+      .enter()
+        .append("option")
+        .attr("value", function (d) { return d.id; })
+        .text(function (d) { return (d.name+" ("+d.articles_count+" articles)"); });
+    dropDown.on("change",pubChanged);
+	  });
+
+// Initialize the map
+var map = L.map('jmap').setView([centerLat, centerLon], Zoom);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+   maxZoom: 18,
+}).addTo(map);
+var markers = L.markerClusterGroup();
+
+// Build the map
+buildMap(pubID);
+
+
+// Load the first page for the publication
+function buildMap (id) {
+	d3.xhr("https://journalmap.org/api/articles.json?key="+apikey+"&page=1&publication_id="+id+"&version=1.0", function(error,pubjson) {
+			var pages = pubjson.getResponseHeader('X-Pages');
+			var articles = [];
+			markers = L.markerClusterGroup();  // Empty out the markers if they exist already
+			for(page=1;page<=pages;page++) {
+				d3.json("https://journalmap.org/api/articles.json?key="+apikey+"&page="+page+"&publication_id="+id+"&version=1.0", function(error,articles) {
+					// Assemble the markers for the map
+
+					for (i=0;i<articles.length;i++) {
+						var article = articles[i];
+						var locations = articles[i].locations;
+						for (j=0;j<locations.length;j++) {
+							var marker = L.marker([locations[j].latitude,locations[j].longitude]);
+							marker.bindPopup("<div><strong><a href='https://journalmap.org/articles/"+article.id+"/' target='_blank'>"+article.title+"</a></strong></div><div class='altmetric-embed' data-badge-type='donut' data-doi='"+article.doi+"'></div>");
+							markers.addLayer(marker);
+						};
+					};
+					map.addLayer(markers);
+
+				});  // Close d3.json
+		}  // Close iteration over API pages
+	}); // Close d3.xhr
+};  // Close buildMap function
+
+
+
+function pubChanged() {
+	var selectedValue = d3.event.target.value;
+	var name = d3.event.target.options[selectedValue-1].text;
+	//console.log(d3.event.target.options[selectedValue-1].text);
+	map.removeLayer(markers);
+	buildMap(selectedValue);
+        d3.select("#pubName").text("Article Locations for "+name);
+};
+
+
+
+</script>

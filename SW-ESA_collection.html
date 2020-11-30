@@ -1,0 +1,162 @@
+<html>
+
+<head>
+	<title>JournalMap API Example</title>
+	<meta charset="utf-8" />
+
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+	<script src="http://d3js.org/queue.v1.min.js"></script>
+	<script src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>
+	<link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css" />
+	<link rel="stylesheet" href="MarkerCluster.css" />
+	<link rel="stylesheet" href="MarkerCluster.Default.css" />
+	<script src="leaflet.markercluster-src.js"></script>
+    <script src="spin.js"></script>
+
+</head>
+
+<body>
+
+<style>
+	.spinner {
+		position: relative;
+		top: 50%;
+		left: 0%;
+	}
+</style>
+
+
+	<div id="jmap" style="height:100%;width:100%">
+		<div class="spinner" id="jmapSpin"></div>
+	</div>
+	<a href="https://www.journalmap.org" style="position:relative;top:-50px"><img src="jmap_logo.png" width="150px"></a>
+
+<script>
+	var collectionName = "Southwest Chapter of Ecological Society of America Research";
+	var centerLat = 40;
+	var centerLon = -100;
+	var Zoom = 3;
+	var apikey = "PjFRefUzFYzFCvshie8Q";
+	var data = []; // a global to store the json response
+
+
+	var spinner = new Spinner({
+		lines: 12, // The number of lines to draw
+		length: 7, // The length of each line
+		width: 3, // The line thickness
+		radius: 10, // The radius of the inner circle
+		color: '#000', // #rbg or #rrggbb
+		speed: 1, // Rounds per second
+		trail: 100, // Afterglow percentage
+		shadow: false // Whether to render a shadow
+	})
+
+	String.prototype.trimRight = function(charlist) {
+  			if (charlist === undefined)
+			    charlist = "\s";
+			return this.replace(new RegExp("[" + charlist + "]+$"), "");
+		};
+
+		// Function to build citations from JournalMap database fields
+	var buildCitation = function(title,authors,year,journal,vol,iss,spage,epage) {
+		authorlist = '';
+		for (i = 0; i < authors.length; i++) {
+			if (i===0) {
+				var sep = '';
+			} else if (i===(authors.length-1)) {
+				sep = ' and ';
+			} else {
+				sep = ', ';
+			}
+			authorlist += sep+authors[i];
+		}
+		var vips = '';
+		if (vol!='') { vips+=vol; }
+		if (iss!='') { vips+='('+iss+')'; }
+		if (vips!='') { vips+=':'; }
+		if (spage!='') { vips+=spage; }
+		if (epage!='') { vips+='-'+epage; }
+		return(authorlist.trimRight('.')+'. '+year+'. '+title.trimRight('.')+'. '+'<em>'+journal.trimRight('.')+'</em> '+vips);
+	};
+
+	// Function to build HTML link from DOI numbers
+	var buildDOIlink = function(doi) {
+		return('<a href="http://dx.doi.org/'+doi+'" target="_blank">'+doi+'</a>');
+	};
+
+
+	// function to build HTML for the popup box for each marker
+	var buildPopupHTML = function(id,title,citation,doi,url) {
+		var html = "<strong><a href='https://www.journalmap.org/articles/"+id+"/' target='_blank'>"+
+			title+"</a></strong><p>"+citation+"<p><strong>DOI: </strong>"+buildDOIlink(doi);
+		return html;
+	};
+
+
+	// Get the information on the collection (e.g., title, description, intro)
+	d3.json("https://www.journalmap.org/api/collections.json?key="+apikey+"&version=1.0&query="+collectionName,function (error,collection){
+		console.log(collection[0]);
+		var title = collection[0].title;
+		var description = collection[0].description;
+		var intro = collection[0].intro;
+		var id = collection[0].id;
+		//d3.select("#collectionName").text(title);
+		//d3.select("#intro").text(intro);
+		//d3.select("#description").text(description);
+
+		// Initialize the map
+		var map = L.map('jmap').setView([centerLat, centerLon], Zoom);
+		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+		   maxZoom: 18,
+		}).addTo(map);
+		var markers = L.markerClusterGroup();
+
+		// Fetch the articles in the collection and build the points.
+		d3.xhr("https://www.journalmap.org/api/articles.json?key="+apikey+"&page=1&collection_id="+id+"&version=1.0", function(error,pubjson) {
+			var pages = pubjson.getResponseHeader('X-Pages');
+			spinner.spin(document.getElementById("jmapSpin"));
+			var articles = [];
+			q = queue();
+			for(page=1;page<=pages;page++) {
+				q.defer(d3.json, "https://www.journalmap.org/api/articles.json?key="+apikey+"&page="+page+"&collection_id="+id+"&version=1.0")
+			}
+			q.awaitAll(function(error,files) {
+
+				for (f=0;f<files.length;f++) {
+					articles.push.apply(articles,files[f]);
+				};
+
+				// Assemble the markers for the map
+				console.log(articles);
+				markers = L.markerClusterGroup();  // Empty out the markers if they exist already
+				articles.forEach(function(article){
+					var authorlist = []
+					article.authors.forEach(function(author) {
+						authorlist.push(author.last_name + ", " + author.first_name);
+					});
+    				var citation = buildCitation(article.title,authorlist,article.publish_year,article.publication.name,article.volume,article.issue,article.start_page,article.end_page);
+					article.locations.forEach(function(location){
+						var marker = L.marker([location.latitude,location.longitude]);
+						marker.bindPopup(buildPopupHTML(article.id,article.title,citation,article.doi,article.url));
+    					markers.addLayer(marker);
+					});
+				});
+				map.addLayer(markers);
+
+				spinner.stop(document.getElementById("jmapSpin"));
+
+			});  // Close the q.awaitAll
+		});  // Close the d3.xhr call
+
+		// Set the map source attribution
+  		maplink = '<a href="http://openstreetmap.org">OpenStreetMap</a>';
+		landlink = '<a href="http://thunderforest.com/">Thunderforest</a>';
+		cclink = '<a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>';
+		leaflink = '<a href="http://leafletjs.com">Leaflet</a>';
+		map.attributionControl.addAttribution('Maps &copy; '+landlink+', Data &copy; '+maplink+', '+cclink+' | <a href="https://www.journalmap.org">JournalMap</a> data provided CC-BY-SA');
+
+	});   	// Close the original d3.json that fetched the collection info.
+
+</script>
